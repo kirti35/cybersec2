@@ -11,7 +11,7 @@ from aiogram.fsm.storage.memory import MemoryStorage
 
 
 
-API_TOKEN = '8516060079:AAGV-phmub_cv35k8tJ6exOOriiQNH6whgc'  
+API_TOKEN = '8663582294:AAG6KkdaLnaZ-ZPpOtjbewc5PV3stJ6dG8g'  
 
 
 QUESTIONS = [
@@ -169,4 +169,5 @@ async def main():
     await dp.start_polling(bot)
 
 if __name__ == "__main__":
+
     asyncio.run(main())
