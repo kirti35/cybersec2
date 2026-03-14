@@ -8,137 +8,142 @@ from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import State, StatesGroup
 from aiogram.fsm.storage.memory import MemoryStorage
 
-
-
-
-API_TOKEN = '8663582294:AAG6KkdaLnaZ-ZPpOtjbewc5PV3stJ6dG8g'  
-
+API_TOKEN = '8663582294:AAG6KkdaLnaZ-ZPpOtjbewc5PV3stJ6dG8g'
 
 QUESTIONS = [
     {
-        "text": "Использование одного и того же пароля для всех сервисов — это безопасно?",
-        "correct": False  
+        "text": "Что такое фишинг?",
+        "options": [
+            "A) Вид рыбалки",
+            "B) Метод социальной инженерии для кражи данных",
+            "C) Антивирусная программа",
+            "D) Тип шифрования"
+        ],
+        "correct": 1
     },
     {
-        "text": "Двухфакторная аутентификация (2FA) помогает защитить аккаунт от взлома?",
-        "correct": True   
+        "text": "Какой пароль считается наиболее надежным?",
+        "options": [
+            "A) qwerty123",
+            "B) Дата рождения",
+            "C) K#8mP$vL2@nQ9",
+            "D) Имя питомца"
+        ],
+        "correct": 2
     },
     {
-        "text": "Можно ли переходить по подозрительным ссылкам от незнакомцев в Telegram?",
-        "correct": False  
+        "text": "Что такое двухфакторная аутентификация?",
+        "options": [
+            "A) Вход по отпечатку пальца",
+            "B) Использование двух разных паролей",
+            "C) Подтверждение входа вторым способом (SMS, приложение)",
+            "D) Два разных логина"
+        ],
+        "correct": 2
     },
     {
-        "text": "Публичный Wi-Fi (например, в кафе) безопасен для ввода паролей без использования VPN?",
-        "correct": False  
+        "text": "Как защитить свои данные в публичном Wi-Fi?",
+        "options": [
+            "A) Использовать VPN",
+            "B) Отключить брандмауэр",
+            "C) Использовать простые пароли",
+            "D) Включить общий доступ"
+        ],
+        "correct": 0
     },
     {
-        "text": "Антивирус на компьютере помогает защититься от вредоносных программ?",
-        "correct": True   
+        "text": "Что такое вредоносное ПО?",
+        "options": [
+            "A) Программа для ускорения компьютера",
+            "B) Программа, наносящая вред устройству или данным",
+            "C) Антивирус",
+            "D) Офисное приложение"
+        ],
+        "correct": 1
     },
     {
-        "text": "Если пришло письмо 'от банка' с требованием срочно ввести пароль, стоит ли доверять и переходить по ссылке?",
-        "correct": False  
+        "text": "Как распознать мошенническое письмо?",
+        "options": [
+            "A) Грамматические ошибки",
+            "B) Срочное требование действий",
+            "C) Подозрительные ссылки",
+            "D) Все вышеперечисленное"
+        ],
+        "correct": 3
     }
 ]
 
-
 logging.basicConfig(level=logging.INFO)
-
 
 bot = Bot(token=API_TOKEN)
 storage = MemoryStorage()
 dp = Dispatcher(storage=storage)
 
-
 class Quiz(StatesGroup):
-    start_quiz = State()  
-    question = State()   
+    start_quiz = State()
+    question = State()
 
-
-
-def get_yes_no_keyboard():
+def get_options_keyboard(options):
     builder = InlineKeyboardBuilder()
-    builder.button(text="✅ Да", callback_data="answer_yes")
-    builder.button(text="❌ Нет", callback_data="answer_no")
-    builder.adjust(2)  
+    for i, option in enumerate(options):
+        builder.button(text=option, callback_data=f"answer_{i}")
+    builder.adjust(1)
     return builder.as_markup()
-
-
 
 @dp.message(Command("start"))
 async def cmd_start(message: Message, state: FSMContext):
     await state.clear()
-    
     await state.update_data(question_index=0, score=0)
-
     await message.answer(
         "🛡️ *Добро пожаловать в викторину по Информационной безопасности!*\n\n"
-        "Вам будет задано 6 вопросов. Отвечайте честно, используя кнопки ниже.",
+        "Вам будет задано 6 вопросов. Выберите правильный вариант ответа.",
         parse_mode="Markdown"
     )
-
-    
     await ask_question(message, state)
-
-
 
 async def ask_question(event: Message | CallbackQuery, state: FSMContext):
     data = await state.get_data()
     q_index = data.get('question_index', 0)
-
     
     if q_index >= len(QUESTIONS):
         await show_result(event, state)
         return
 
     question = QUESTIONS[q_index]
-
-    
     text = f"*Вопрос {q_index + 1}/{len(QUESTIONS)}:*\n{question['text']}"
 
     if isinstance(event, Message):
-        await event.answer(text, parse_mode="Markdown", reply_markup=get_yes_no_keyboard())
+        await event.answer(text, parse_mode="Markdown", reply_markup=get_options_keyboard(question['options']))
     elif isinstance(event, CallbackQuery):
-        
-        await event.message.edit_text(text, parse_mode="Markdown", reply_markup=get_yes_no_keyboard())
-        await event.answer()  
-
+        await event.message.edit_text(text, parse_mode="Markdown", reply_markup=get_options_keyboard(question['options']))
+        await event.answer()
 
 @dp.callback_query(F.data.startswith("answer_"))
 async def process_answer(callback: CallbackQuery, state: FSMContext):
-    answer = callback.data  
-    user_choice = True if answer == "answer_yes" else False
-
+    answer_index = int(callback.data.split("_")[1])
+    
     data = await state.get_data()
     q_index = data.get('question_index', 0)
     score = data.get('score', 0)
-
     
     current_question = QUESTIONS[q_index]
-    is_correct = (user_choice == current_question['correct'])
-
+    is_correct = (answer_index == current_question['correct'])
+    
     if is_correct:
         score += 1
         feedback = "✅ Верно!"
     else:
-        correct_word = "Да" if current_question['correct'] else "Нет"
-        feedback = f"❌ Неверно! Правильный ответ: *{correct_word}*."
-
+        correct_option = current_question['options'][current_question['correct']]
+        feedback = f"❌ Неверно! Правильный ответ: *{correct_option}*."
 
     await state.update_data(question_index=q_index + 1, score=score)
-
     await callback.message.answer(feedback, parse_mode="Markdown")
-
-
     await ask_question(callback, state)
-
-
 
 async def show_result(event: Message | CallbackQuery, state: FSMContext):
     data = await state.get_data()
     score = data.get('score', 0)
     total = len(QUESTIONS)
-
     
     if score == total:
         comment = "🏆 Идеально! Вы настоящий эксперт по кибербезопасности!"
@@ -153,21 +158,17 @@ async def show_result(event: Message | CallbackQuery, state: FSMContext):
         f"{comment}\n\n"
         f"Хотите попробовать снова? Напишите /start"
     )
-
     
     await state.clear()
-
+    
     if isinstance(event, Message):
         await event.answer(result_text, parse_mode="Markdown")
     elif isinstance(event, CallbackQuery):
         await event.message.edit_text(result_text, parse_mode="Markdown")
         await event.answer()
 
-
-
 async def main():
     await dp.start_polling(bot)
 
 if __name__ == "__main__":
-
     asyncio.run(main())
