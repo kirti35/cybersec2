@@ -12,58 +12,58 @@ API_TOKEN = '8663582294:AAG6KkdaLnaZ-ZPpOtjbewc5PV3stJ6dG8g'
 
 QUESTIONS = [
     {
-        "text": "Что из перечисленного является наиболее надёжным паролем?",
-        "options": {
-            "a": "123456",
-            "b": "qwerty",
-            "c": "R7#kLp$2mQ9"
-        },
-        "correct": "c"
+        "text": "Что такое фишинг и для чего он нужен?",
+        "options": [
+            "A) Программа для взлома паролей",
+            "B) Вид мошенничества с целью получения данных",
+            "C) Атака направленнная на сервер"
+        ],
+        "correct": 1
     },
     {
-        "text": "Что такое фишинг?",
-        "options": {
-            "a": "Вид антивируса",
-            "b": "Метод кражи данных через поддельные сайты или письма",
-            "c": "Способ шифрования файлов"
-        },
-        "correct": "b"
+        "text": "Какой метод атаки основан на психологическом воздействии на человека, а не на взломе программ?",
+        "options": [
+            "A) DDoS-атака",
+            "B) Использование программ-шифровальщиков",
+            "C) Социальная инженерия"
+        ],
+        "correct": 2
     },
     {
-        "text": "Как лучше всего защитить свой аккаунт в интернете?",
-        "options": {
-            "a": "Использовать один и тот же пароль везде",
-            "b": "Включить двухфакторную аутентификацию",
-            "c": "Никогда не выходить из аккаунта"
-        },
-        "correct": "b"
+        "text": "Что такое двухфакторная аутентификация и для чего она нужна?",
+        "options": [
+            "A) Это проверка пароля два раза подряд",
+            "B) Это второй уровень защиты, для подтверждения входа",
+            "C) Это автоматическая смена пароля раз в месяц"
+        ],
+        "correct": 1
     },
     {
-        "text": "Что делать, если вы получили подозрительное письмо от 'банка' с просьбой ввести данные карты?",
-        "options": {
-            "a": "Перейти по ссылке и ввести данные",
-            "b": "Игнорировать и удалить письмо",
-            "c": "Ответить отправителю с просьбой уточнить"
-        },
-        "correct": "b"
+        "text": "Какие последствия для жертвы может иметь взлом аккаунта в социальной сети",
+        "options": [
+            "A) Только потеря доступа к странице",
+            "B) Кража данных, публикация постов от имени жертвы",
+            "C) Замедление работы компьютера"
+        ],
+        "correct": 1
     },
     {
-        "text": "Какое расширение у безопасного соединения HTTPS?",
-        "options": {
-            "a": "Замок в адресной строке",
-            "b": "Красное предупреждение",
-            "c": "Отсутствие значка"
-        },
-        "correct": "a"
+        "text": "К каким последствиям для бизнеса может привести успешная хакерская атака?",
+        "options": [
+            "A) Только к временным неудобствам для сотрудников",
+            "B) К утечке данных сотрудников и потере финансов",
+            "C) К потере репутации компании"
+        ],
+        "correct": 1
     },
     {
-        "text": "Что из перечисленного является примером вредоносного ПО?",
-        "options": {
-            "a": "Браузер",
-            "b": "Троян",
-            "c": "Текстовый редактор"
-        },
-        "correct": "b"
+        "text": "Какое правило является самым важным при создании паролей?",
+        "options": [
+            "A) Пароль должен быть коротким",
+            "B) Пароль должен быть сложным и уникальным",
+            "C) Пароль должен содержать имя с фамилией"
+        ],
+        "correct": 1
     }
 ]
 
@@ -79,9 +79,9 @@ class Quiz(StatesGroup):
 
 def get_abc_keyboard():
     builder = InlineKeyboardBuilder()
-    builder.button(text="A", callback_data="answer_a")
-    builder.button(text="B", callback_data="answer_b")
-    builder.button(text="C", callback_data="answer_c")
+    builder.button(text="A", callback_data="answer_0")
+    builder.button(text="B", callback_data="answer_1")
+    builder.button(text="C", callback_data="answer_2")
     builder.adjust(3)
     return builder.as_markup()
 
@@ -91,7 +91,7 @@ async def cmd_start(message: Message, state: FSMContext):
     await state.update_data(question_index=0, score=0)
     await message.answer(
         "Викторина по Информационной безопасности\n\n"
-        "Вам будет задано 6 вопросов с тремя вариантами ответов (a, b, c).\n"
+        "Вам будет задано 6 вопросов с тремя вариантами ответов (A, B, C).\n"
         "Выберите правильный вариант, нажав на кнопку."
     )
     await ask_question(message, state)
@@ -106,8 +106,8 @@ async def ask_question(event: Message | CallbackQuery, state: FSMContext):
 
     question = QUESTIONS[q_index]
     text = f"Вопрос {q_index + 1}/{len(QUESTIONS)}:\n{question['text']}\n\n"
-    for opt_letter, opt_text in question["options"].items():
-        text += f"{opt_letter}. {opt_text}\n"
+    for opt in question["options"]:
+        text += f"{opt}\n"
 
     if isinstance(event, Message):
         await event.answer(text, reply_markup=get_abc_keyboard())
@@ -117,8 +117,8 @@ async def ask_question(event: Message | CallbackQuery, state: FSMContext):
 
 @dp.callback_query(F.data.startswith("answer_"))
 async def process_answer(callback: CallbackQuery, state: FSMContext):
-    answer = callback.data[-1]
-    user_choice = answer
+    answer_index = int(callback.data.split("_")[1])
+    user_choice = answer_index
 
     data = await state.get_data()
     q_index = data.get('question_index', 0)
@@ -131,9 +131,9 @@ async def process_answer(callback: CallbackQuery, state: FSMContext):
         score += 1
         feedback = "Верно!"
     else:
-        correct_letter = current_question['correct']
-        correct_text = current_question['options'][correct_letter]
-        feedback = f"Неверно! Правильный ответ: {correct_letter}. {correct_text}."
+        correct_index = current_question['correct']
+        correct_text = current_question['options'][correct_index]
+        feedback = f"Неверно! Правильный ответ: {correct_text}."
 
     await state.update_data(question_index=q_index + 1, score=score)
     await callback.message.answer(feedback)
@@ -171,3 +171,5 @@ async def main():
 
 if __name__ == "__main__":
     asyncio.run(main())
+
+    
