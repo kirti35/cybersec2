@@ -8,7 +8,7 @@ from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import State, StatesGroup
 from aiogram.fsm.storage.memory import MemoryStorage
 
-API_TOKEN = 'YOUR_BOT_TOKEN_HERE'
+API_TOKEN = '8663582294:AAG6KkdaLnaZ-ZPpOtjbewc5PV3stJ6dG8g'
 
 QUESTIONS = [
     {
